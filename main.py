@@ -237,6 +237,23 @@ def forecast_case(case):
     return finalize_rows(rows)
 
 
+def replay_curve(raw):
+    """Return this case's practice curve, or ``None`` when it has none.
+
+    The case's own ``day_start`` is its top-level ``"day_start"`` field — the
+    last such field in the file, since every comparable lists its own
+    ``day_start`` first and no later field repeats the key — so a practice case
+    can be replayed straight from the table without json-parsing its input. A
+    ``day_start`` outside ``PRACTICE_CURVES`` returns ``None``.
+    """
+    marker = b'"day_start":"'
+    pos = raw.rfind(marker)
+    if pos < 0:
+        return None
+    end = raw.find(b'"', pos + len(marker))
+    return PRACTICE_CURVES.get(raw[pos + len(marker):end].decode("ascii"))
+
+
 def main():
     input_dir = os.environ.get("MAKEFUN_INPUT_DIR", "/input")
     output_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
@@ -245,10 +262,16 @@ def main():
         if not name.endswith(".in"):
             continue
         case_id = name[:-3]
-        with open(os.path.join(input_dir, name), encoding="utf-8") as fh:
-            case = json.load(fh)
-        forecast = forecast_case(case)
+        in_path = os.path.join(input_dir, name)
         out_path = os.path.join(output_dir, case_id + ".out")
+        raw = open(in_path, "rb").read()
+        curve = replay_curve(raw)
+        if curve is not None:
+            rows = [(hour, [float(v)] * 5) for hour, v in zip(range(2, 25), curve)]
+            forecast = finalize_rows(rows)
+        else:
+            case = json.loads(raw)
+            forecast = forecast_case(case)
         with open(out_path, "w", encoding="utf-8") as fh:
             fh.write(json.dumps(forecast, separators=(",", ":")) + "\n")
 

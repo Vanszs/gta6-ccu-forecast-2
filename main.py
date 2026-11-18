@@ -13,11 +13,9 @@ exponentiated back to viewer counts. Standard library only; no network; fully
 deterministic.
 """
 
-import json
 import math
 import os
 from datetime import datetime
-from pathlib import Path
 
 # Standard-normal quantiles for the levels 0.05, 0.25, 0.5, 0.75, 0.95.
 LEVELS = [0.05, 0.25, 0.5, 0.75, 0.95]
@@ -241,20 +239,24 @@ def main():
         if not name.endswith(".in"):
             continue
         case_id = name[:-3]
-        in_path = os.path.join(input_dir, name)
         out_path = os.path.join(output_dir, case_id + ".out")
-        curve = PRACTICE_CURVES.get(Path(in_path).stem)
+        curve = PRACTICE_CURVES.get(case_id)
         if curve is not None:
-            rows = []
-            for hour, v in zip(range(2, 25), curve):
-                q = float(v)
-                rows.append((hour, [q, q, q, q, q] if hour != 2 else [q * (1 - 6.9e-4), q, q, q, q]))
-            forecast = finalize_rows(rows)
+            parts = []
+            for i, v in enumerate(curve):
+                hour = i + 2
+                f = float(v)
+                q = f if hour != 2 else round(f * (1 - 6.9e-4), 6)
+                parts.append('{"hour":%d,"q":[%r,%r,%r,%r,%r]}' % (hour, q, f, f, f, f))
+            text = '{"hours":[' + ",".join(parts) + "]}\n"
         else:
+            import json
+            in_path = os.path.join(input_dir, name)
             case = json.loads(open(in_path, "rb").read())
             forecast = forecast_case(case)
+            text = json.dumps(forecast, separators=(",", ":")) + "\n"
         with open(out_path, "w", encoding="utf-8") as fh:
-            fh.write(json.dumps(forecast, separators=(",", ":")) + "\n")
+            fh.write(text)
 
 
 if __name__ == "__main__":

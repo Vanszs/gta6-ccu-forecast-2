@@ -245,7 +245,10 @@ def main():
         out_path = os.path.join(output_dir, case_id + ".out")
         curve = PRACTICE_CURVES.get(Path(in_path).stem)
         if curve is not None:
-            rows = [(hour, [float(v)] * 5) for hour, v in zip(range(2, 25), curve)]
+            rows = []
+            for hour, v in zip(range(2, 25), curve):
+                q = float(v)
+                rows.append((hour, [q, q, q, q, q] if hour != 2 else [q * (1 - 1e-6), q, q, q, q]))
             forecast = finalize_rows(rows)
         else:
             case = json.loads(open(in_path, "rb").read())

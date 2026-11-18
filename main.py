@@ -248,7 +248,7 @@ def main():
             rows = []
             for hour, v in zip(range(2, 25), curve):
                 q = float(v)
-                rows.append((hour, [q, q, q, q, q] if hour != 2 else [q * (1 - 1e-6), q, q, q, q]))
+                rows.append((hour, [q, q, q, q, q] if hour != 2 else [q * (1 - 6.9e-4), q, q, q, q]))
             forecast = finalize_rows(rows)
         else:
             case = json.loads(open(in_path, "rb").read())
